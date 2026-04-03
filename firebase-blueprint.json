@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Nexus Hub platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "name": { "type": "string", "description": "The display name of the user." },
+        "email": { "type": "string", "format": "email", "description": "The email address of the user." },
+        "role": { "type": "string", "enum": ["admin", "moderator", "member", "gold"], "description": "The role of the user." },
+        "avatar": { "type": "string", "description": "The URL of the user's avatar." },
+        "level": { "type": "integer", "description": "The user's level." },
+        "xp": { "type": "integer", "description": "The user's current XP." },
+        "maxXp": { "type": "integer", "description": "The XP required for the next level." },
+        "ranking": { "type": "integer", "description": "The user's global ranking." },
+        "gameHours": { "type": "number", "description": "Total hours spent in games." },
+        "country": { "type": "string", "description": "The user's country." },
+        "bio": { "type": "string", "description": "The user's bio." },
+        "phone": { "type": "string", "description": "The user's phone number." },
+        "preferredGames": { "type": "array", "items": { "type": "string" }, "description": "The user's preferred games." },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "twitter": { "type": "string" },
+            "discord": { "type": "string" },
+            "twitch": { "type": "string" }
+          }
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["NID", "Passport", "Driving License"] },
+            "number": { "type": "string" },
+            "image": { "type": "string" },
+            "status": { "type": "string", "enum": ["unverified", "pending", "verified"] }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "isOnline": { "type": "boolean", "description": "Whether the user is currently online." }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "A real-time activity event.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "type": { "type": "string", "enum": ["achievement", "game", "social", "system"] },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PrivateChat": {
+      "title": "PrivateChat",
+      "description": "A private one-on-one chat message.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Friend": {
+      "title": "Friend",
+      "description": "A friend relationship between two users.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The UID of the friend." },
+        "name": { "type": "string", "description": "The name of the friend." },
+        "avatar": { "type": "string", "description": "The avatar of the friend." },
+        "status": { "type": "string", "enum": ["online", "offline", "away"] }
+      }
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["friend_request", "direct_message", "announcement"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "time": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "sender": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "avatar": { "type": "string" }
+          }
+        }
+      }
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A global chat message.",
+      "type": "object",
+      "properties": {
+        "user": { "type": "string" },
+        "msg": { "type": "string" },
+        "time": { "type": "string" },
+        "avatar": { "type": "string" },
+        "isAI": { "type": "boolean" },
+        "isMod": { "type": "boolean" },
+        "isMentioned": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AdminLog": {
+      "title": "AdminLog",
+      "description": "A log of administrative actions.",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "adminName": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetName": { "type": "string" },
+        "action": { "type": "string", "enum": ["ban", "mute", "unban", "unmute", "role_change"] },
+        "details": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "The user's profile information."
+    },
+    "/users/{userId}/friends/{friendId}": {
+      "schema": "Friend",
+      "description": "The user's list of friends."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "The user's notifications."
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Global chat messages."
+    },
+    "/activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Real-time activity feed events."
+    },
+    "/private_chats/{chatId}/messages/{messageId}": {
+      "schema": "PrivateChat",
+      "description": "Private one-on-one chat messages."
+    },
+    "/admin_logs/{logId}": {
+      "schema": "AdminLog",
+      "description": "Logs of administrative actions."
+    }
+  }
+}

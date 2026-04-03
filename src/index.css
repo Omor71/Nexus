@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-nexus-accent: #4F46E5;
+  --color-nexus-accent-dark: #3730A3;
+  --color-nexus-gold: #FFD700;
+  --color-nexus-secondary: #10B981;
+  --color-nexus-dark: var(--nexus-bg);
+  --color-nexus-deep: var(--nexus-deep);
+  --color-nexus-surface: var(--nexus-surface);
+  --color-nexus-text: var(--nexus-text);
+  --color-nexus-muted: var(--nexus-text-muted);
+  --color-nexus-dim: var(--nexus-text-dim);
+  --color-nexus-border: var(--nexus-border);
+
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+  }
+}
+
+:root {
+  --nexus-bg: #F8FAFC;
+  --nexus-deep: #F1F5F9;
+  --nexus-surface: #FFFFFF;
+  --nexus-text: #0F172A;
+  --nexus-text-muted: #475569;
+  --nexus-text-dim: #64748B;
+  --nexus-border: rgba(0, 0, 0, 0.1);
+  --nexus-glass: rgba(255, 255, 255, 0.9);
+  --nexus-accent-glow: rgba(79, 70, 229, 0.1);
+}
+
+.dark {
+  --nexus-bg: #020617;
+  --nexus-deep: #000000;
+  --nexus-surface: #0F172A;
+  --nexus-text: #F8FAFC;
+  --nexus-text-muted: #E2E8F0;
+  --nexus-text-dim: #94A3B8;
+  --nexus-border: rgba(255, 255, 255, 0.15);
+  --nexus-glass: rgba(15, 23, 42, 0.9);
+  --nexus-accent-glow: rgba(79, 70, 229, 0.4);
+}
+
+@layer base {
+  body {
+    @apply bg-nexus-dark text-nexus-text font-sans antialiased overflow-x-hidden transition-colors duration-500;
+    background-image: 
+      radial-gradient(circle at 20% 20%, var(--nexus-accent-glow) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+}
+
+.glass-panel {
+  @apply bg-[var(--nexus-glass)] backdrop-blur-2xl border border-nexus-border;
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.1);
+}
+
+.nexus-card {
+  @apply bg-nexus-surface border border-nexus-border hover:border-nexus-accent/40 transition-all duration-500 rounded-3xl;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.nexus-card:hover {
+  @apply bg-nexus-surface -translate-y-1;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.nexus-gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-br from-nexus-text via-nexus-accent to-nexus-accent-dark font-black;
+}
+
+.nexus-plus-badge {
+  @apply flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-md text-[10px] font-black text-white shadow-lg shadow-orange-500/20 uppercase tracking-tighter;
+}
+
+.highlight-icon {
+  @apply drop-shadow-[0_0_12px_var(--nexus-accent-glow)] transition-all duration-300;
+  filter: saturate(1.2) brightness(1.1);
+}
+
+.nexus-gold-badge {
+  @apply relative overflow-hidden bg-gradient-to-r from-nexus-gold via-yellow-200 to-nexus-gold px-2 py-0.5 rounded-md text-[8px] font-black text-nexus-dark shadow-lg shadow-nexus-gold/30 uppercase tracking-widest border border-white/20;
+  animation: pulse-gold 2s infinite ease-in-out;
+}
+
+.nexus-gold-badge::after {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent;
+  transform: translateX(-100%) rotate(45deg);
+  animation: shine 3s infinite linear;
+}
+
+.highlight-text {
+  @apply text-nexus-text font-extrabold tracking-tight;
+  text-shadow: 0 0 1px rgba(0,0,0,0.05);
+}
+
+.dark .highlight-text {
+  @apply text-white;
+  text-shadow: 0 0 15px rgba(255,255,255,0.2);
+}
+
+.nexus-premium-card {
+  @apply relative overflow-hidden bg-gradient-to-br from-nexus-surface to-nexus-accent/5 border-nexus-accent/30 rounded-[2.5rem] p-8 transition-all duration-500;
+  box-shadow: 0 20px 40px -12px rgba(79, 70, 229, 0.15);
+}
+
+.nexus-premium-card:hover {
+  @apply -translate-y-1 border-nexus-accent/50;
+  box-shadow: 0 30px 60px -12px rgba(79, 70, 229, 0.25);
+}
+
+.nexus-glow {
+  box-shadow: 0 0 20px rgba(79, 70, 229, 0.1);
+}
+
+.nexus-glow-secondary {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+.animate-shine {
+  animation: shine 3s infinite linear;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-nexus-border rounded-full hover:bg-nexus-accent/30 transition-colors;
+}

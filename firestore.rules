@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Document ID: userId (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: admin, moderator, member, gold)
+    //   - avatar: string (optional)
+    //   - level: number (optional)
+    //   - xp: number (optional)
+    //   - maxXp: number (optional)
+    //   - bio: string (optional)
+    //   - phone: string (optional)
+    //   - preferredGames: list (optional)
+    //   - socialLinks: map (optional)
+    //   - verification: map (optional)
+    //
+    // Collection: /users/{userId}/friends/{friendId}
+    // Document ID: friendId
+    // Fields:
+    //   - uid: string (required)
+    //   - name: string (required)
+    //   - avatar: string (required)
+    //   - status: string (required, enum: online, offline, away)
+    //
+    // Collection: /users/{userId}/notifications/{notificationId}
+    // Document ID: notificationId
+    // Fields:
+    //   - id: string (required)
+    //   - type: string (required, enum: friend_request, direct_message, announcement)
+    //   - title: string (required)
+    //   - message: string (required)
+    //   - time: string (required)
+    //   - isRead: bool (required)
+    //   - sender: map (optional)
+    //
+    // Collection: /activities/{activityId}
+    // Document ID: activityId
+    // Fields:
+    //   - userId: string (required)
+    //   - userName: string (required)
+    //   - userAvatar: string (required)
+    //   - type: string (required, enum: achievement, game, social, system)
+    //   - text: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: /private_chats/{chatId}/messages/{messageId}
+    // Document ID: messageId
+    // Fields:
+    //   - senderId: string (required)
+    //   - senderName: string (required)
+    //   - text: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "omd124106@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'moderator', 'member', 'gold'] &&
+             (!('ranking' in data) || data.ranking is int) &&
+             (!('gameHours' in data) || data.gameHours is number) &&
+             (!('country' in data) || data.country is string);
+    }
+
+    function isValidFriend(data) {
+      return data.keys().hasAll(['uid', 'name', 'avatar', 'status']) &&
+             data.uid is string &&
+             data.name is string &&
+             data.avatar is string &&
+             data.status in ['online', 'offline', 'away'];
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'type', 'title', 'message', 'time', 'isRead']) &&
+             data.id is string &&
+             data.type in ['friend_request', 'direct_message', 'announcement'] &&
+             data.title is string &&
+             data.message is string &&
+             data.time is string &&
+             data.isRead is bool;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'member' || request.resource.data.role == 'gold' || isAdmin());
+      allow update: if isAuthenticated() && (isAdmin() || (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role));
+
+      match /friends/{friendId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) && isValidFriend(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+        allow update: if isOwner(userId) && isValidNotification(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /messages/{document=**} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+    }
+
+    match /activities/{document=**} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidActivity(request.resource.data);
+    }
+
+    match /private_chats/{chatId}/messages/{document=**} {
+      allow read: if isAuthenticated() && (chatId.matches("^" + request.auth.uid + "_.*") || chatId.matches(".*_" + request.auth.uid + "$"));
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId && (chatId.matches("^" + request.auth.uid + "_.*") || chatId.matches(".*_" + request.auth.uid + "$")) && isValidPrivateChat(request.resource.data);
+    }
+
+    match /admin_logs/{document=**} {
+      allow read: if isAdmin();
+      allow create: if (isAdmin() || (isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator')) && isValidAdminLog(request.resource.data);
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['user', 'msg', 'time', 'timestamp']) &&
+             data.user is string && data.user.size() > 0 && data.user.size() < 50 &&
+             data.msg is string && data.msg.size() > 0 && data.msg.size() < 1000 &&
+             data.time is string &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidActivity(data) {
+      return data.keys().hasAll(['userId', 'userName', 'userAvatar', 'type', 'text', 'createdAt']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.userAvatar is string &&
+             data.type in ['achievement', 'game', 'social', 'system'] &&
+             data.text is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidPrivateChat(data) {
+      return data.keys().hasAll(['senderId', 'senderName', 'text', 'createdAt']) &&
+             data.senderId is string &&
+             data.senderName is string &&
+             data.text is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidAdminLog(data) {
+      return data.keys().hasAll(['adminId', 'adminName', 'targetId', 'targetName', 'action', 'details', 'createdAt']) &&
+             data.adminId is string &&
+             data.adminName is string &&
+             data.targetId is string &&
+             data.targetName is string &&
+             data.action in ['ban', 'mute', 'unban', 'unmute', 'role_change'] &&
+             data.details is string &&
+             data.createdAt is timestamp;
+    }
+  }
+}
